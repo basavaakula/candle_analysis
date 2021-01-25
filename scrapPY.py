@@ -2,6 +2,7 @@
 
 import pandas as pd
 import requests
+import os
 from nsetools import Nse
 from datetime import timezone
 from datetime import date
@@ -16,7 +17,7 @@ def yahoo_fetch_history(num_days,stock):
     url = 'https://query1.finance.yahoo.com/v7/finance/download/'+stock+'.NS'
     url += '?period1='+str(period1)+'&period2='+str(period2)+'&interval=1d&events=history&includeAdjustedClose=true'
     r = requests.get(url, allow_redirects=False)
-    with open('/home/abasava/LITERATURE/TRADING/dat.csv', 'wb') as f:f.write(r.content)
+    with open(os.getcwd()+'/dat.csv', 'wb') as f:f.write(r.content)
 
 def process_data(dat):
     dictt = {}
