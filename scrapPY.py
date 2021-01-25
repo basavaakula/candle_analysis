@@ -9,6 +9,12 @@ from datetime import datetime,timedelta
 
 
 class stock_analsys:
+    global_tolerances = {}
+    global_tolerances['ratio_MARUBOZU'] = 0.9 
+    #this tolerance is for verifying if the candle length and the candle body length are close....test for MARUBOZU
+    global_tolerances['ratio_DOJI'] = 0.3
+    global_tolerances['ratio_MEAN'] = 0.99
+    
     def __init__(self,delta_days,stock_name):
         self.delta_days = delta_days 
         self.stock_name = stock_name
@@ -39,6 +45,7 @@ class stock_analsys:
         ll['candle_body'] = abs(ll['open_close_diff'])
         ll['candle_mean'] = abs((ll['High']+ll['Low'])/2.)
         ll['body_mean'] = abs((ll['Open']+ll['Close'])/2.)
+        ll['ratio_bodylen_cndlen'] = ll['candle_body']/ll['candle_len']
         dictt['now'] = ll
         self.single_day_candles(dictt)
 
@@ -53,24 +60,17 @@ class stock_analsys:
         print("body mean = %f"%dictt['now']['body_mean'])
         print("candle mean = %f"%dictt['now']['candle_mean'])
         print("")
-        if(dictt['now']['candle_body']/dictt['now']['candle_len']>.9):
+        if(dictt['now']['ratio_bodylen_cndlen']>self.global_tolerances['ratio_MARUBOZU']):
             print("Moribozu")
-        if(dictt['now']['candle_body']/dictt['now']['candle_len']<.3):
-            if(dictt['now']['body_mean']/dictt['now']['candle_mean']>.99):
+        if(dictt['now']['ratio_bodylen_cndlen']>self.global_tolerances['ratio_DOJI']):
+            if(dictt['now']['body_mean']/dictt['now']['candle_mean']>self.global_tolerances['ratio_MEAN']):
                 print("DOJI")
     
 
 
-stock_name = "ASHOKLEY"
+stock_name = "TATAMOTORS"
 cls_instance = stock_analsys(10,stock_name)
-##num_days = timedelta(days = 5)
 #nse = Nse()
-#stock_name = "ASHOKLEY"
-#print("********************************** "+stock_name+" **********************************")
-#yahoo_fetch_history(num_days,stock_name)
-##yahoo_fetch_history(num_days,'ASHOKLEY')
-#dat = pd.read_csv('dat.csv')
-#process_data(dat)
 
 
 
