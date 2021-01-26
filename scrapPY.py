@@ -46,8 +46,11 @@ class stock_analsys:
     
     def multi_stock(self):
         self.TREND = {}
+        iCount = 0
         for key in self.symbs:
             for stock in self.symbs[key]:
+                iCount += 1
+                print(stock)
                 self.MARUBOZU = 'FALSE'
                 self.DOJI = 'FALSE'
                 self.REVSERSAL = 'FALSE'
@@ -75,6 +78,7 @@ class stock_analsys:
         self.global_out_dict['TREND_REVERSAL'] = self.reversal
         self.df = pd.DataFrame(self.global_out_dict)
         self.df.to_csv(os.getcwd()+'/OUT.csv')
+        #print("Processed %i"%len(iCount))
     
     def yahoo_fetch_history(self):
         now = datetime.now()
@@ -149,9 +153,9 @@ class stock_analsys:
         if(len(mean_values)!=0):
             popt, _ = curve_fit(self.fitting_funcs[self.ff],x_data,mean_values)
             mean_fitted = self.fitting_funcs[self.ff](x_data,*popt)
-            plt.plot(x_data,mean_values,'--b')
-            plt.plot(x_data,mean_fitted,'-r')
-            plt.show()
+            #plt.plot(x_data,mean_values,'--b')
+            #plt.plot(x_data,mean_fitted,'-r')
+            #plt.show()
             for i in self.global_constants['prev_trend_days']:
                 x_tick = self.global_constants['trend_days']-i
                 mean_func_left_intrvl = self.fitting_funcs[self.ff](x_data[x_tick],*popt)
@@ -197,13 +201,16 @@ class stock_analsys:
 	    return (a * x) + (b * x**2) + (c * x**3) + (d * x**4) + (e * x**5) + (f * x**6) + (g * x**7) + (h * x**8) + (i * x**9) + (j * x**10) + (k * x**11) + (l * x**12) + (m * x**13) + n
 
 stock_symbols = {}
-stock_symbols['NIFTY auto'] = pd.read_csv('ind_niftyautolist.csv')['Symbol'].to_list()
-stock_symbols['NIFTY bank'] = pd.read_csv('ind_niftybanklist.csv')['Symbol'].to_list()
-stock_symbols['NIFTY it'] = pd.read_csv('ind_niftyitlist.csv')['Symbol'].to_list()
-stock_symbols['NIFTY metal'] = pd.read_csv('ind_niftymetallist.csv')['Symbol'].to_list()
-stock_symbols['NIFTY pharma'] = pd.read_csv('ind_niftypharmalist.csv')['Symbol'].to_list()
-stock_symbols['NIFTY oilGas'] = pd.read_csv('ind_niftyoilgaslist.csv')['Symbol'].to_list()
+stock_symbols['NIFTY F&O'] = pd.read_csv('sos_scheme.csv')['Symbol'].to_list()
 cls_instance = stock_analsys(stock_symbols)
+
+
+#stock_symbols['NIFTY auto'] = pd.read_csv('ind_niftyautolist.csv')['Symbol'].to_list()
+#stock_symbols['NIFTY bank'] = pd.read_csv('ind_niftybanklist.csv')['Symbol'].to_list()
+#stock_symbols['NIFTY it'] = pd.read_csv('ind_niftyitlist.csv')['Symbol'].to_list()
+#stock_symbols['NIFTY metal'] = pd.read_csv('ind_niftymetallist.csv')['Symbol'].to_list()
+#stock_symbols['NIFTY pharma'] = pd.read_csv('ind_niftypharmalist.csv')['Symbol'].to_list()
+#stock_symbols['NIFTY oilGas'] = pd.read_csv('ind_niftyoilgaslist.csv')['Symbol'].to_list()
 #cls_instance.single_stock('KOTAKBANK')
 #cls_instance.single_stock('RELIANCE')
 #nse = Nse()
