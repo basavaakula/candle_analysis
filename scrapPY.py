@@ -30,6 +30,7 @@ class stock_analsys:
         self.delta_days = delta_days
         self.stocks = []
         self.marubozu = []
+        self.engulf = []
         self.doji = []
         self.reversal = []
         self.trend = {}
@@ -41,7 +42,8 @@ class stock_analsys:
     def single_stock(self,stock):
         self.stock_name = stock
         self.yahoo_fetch_history()
-        self.process_data()
+        self.process_data_all()
+        self.analyze_candleS()
         self.find_trend()
     
     def multi_stock(self):
@@ -52,6 +54,7 @@ class stock_analsys:
                 iCount += 1
                 print(stock)
                 self.MARUBOZU = 'FALSE'
+                self.ENGULF = 'FALSE'
                 self.DOJI = 'FALSE'
                 self.REVSERSAL = 'FALSE'
                 for i in self.global_constants['prev_trend_days']:
@@ -59,12 +62,13 @@ class stock_analsys:
                 
                 self.stock_name = stock
                 self.yahoo_fetch_history()
-                #self.dat = pd.read_csv('dat.csv')
-                self.process_data()
+                self.process_data_all()
+                self.analyze_candleS()
                 self.find_trend()
                 
                 self.stocks.append(stock)
                 self.marubozu.append(self.MARUBOZU)
+                self.engulf.append(self.ENGULF)
                 self.doji.append(self.DOJI)
                 self.reversal.append(self.REVSERSAL)
                 for i in self.global_constants['prev_trend_days']:
@@ -76,9 +80,9 @@ class stock_analsys:
         for i in self.global_constants['prev_trend_days']:
             self.global_out_dict['TREND'+str(i)] = self.trend['TREND'+str(i)]
         self.global_out_dict['TREND_REVERSAL'] = self.reversal
+        self.global_out_dict['ENGULF'] = self.engulf
         self.df = pd.DataFrame(self.global_out_dict)
         self.df.to_csv(os.getcwd()+'/OUT.csv')
-        #print("Processed %i"%len(iCount))
     
     def yahoo_fetch_history(self):
         now = datetime.now()
@@ -95,51 +99,28 @@ class stock_analsys:
         ff.to_csv(os.getcwd()+'/dat.csv')
         self.dat = pd.read_csv('dat.csv')
 
-    def process_data(self):
-        dictt = {}
-        ll = {}
-        now = 1
-        ll['Open'] = (float(self.dat['Open'][len(self.dat)-now]))
-        ll['High'] = (float(self.dat['High'][len(self.dat)-now]))
-        ll['Low'] = (float(self.dat['Low'][len(self.dat)-now]))
-        ll['Close'] = (float(self.dat['Close'][len(self.dat)-now]))
-        ll['candle_len'] = float(ll['High']-ll['Low'])
-        ll['open_close_diff'] = float(ll['Close']-ll['Open'])
-        ll['body_len'] = abs(ll['open_close_diff'])
-        ll['candle_mean'] = abs((ll['High']+ll['Low'])/2.)
-        ll['body_mean'] = abs((ll['Open']+ll['Close'])/2.)
-        ll['ratio_bodylen_cndlen'] = ll['body_len']/ll['candle_len']
-        if(ll['open_close_diff']>0):#GAIN
-            ll['upper_wick_len'] = ll['High']-ll['Close']
-            ll['lower_wick_len'] = ll['Open']-ll['Low']
-        else:#LOSS
-            ll['upper_wick_len'] = ll['High']-ll['Open']
-            ll['lower_wick_len'] = ll['Close']-ll['Low']
-        dictt['now'] = ll
-        self.analyze_candle(dictt)
-    
     def process_data_all(self):
         self.dat['candle_len'] = (self.dat['High']-self.dat['Low']).to_list()
         self.dat['body_len'] = [abs(x) for x in (self.dat['Close']-self.dat['Open']).to_list()]
+        self.dat['open_close_diff'] = (self.dat['Close'] - self.dat['Open']).to_list()
+        self.dat['ratio_bodylen_cndlen'] = (self.dat['body_len']/self.dat['candle_len']).to_list()
+        self.dat['upper_wick_len'] = list(map(lambda hi,clos,opn,diff: hi-clos if diff>0.0 else hi-opn,self.dat['High'],self.dat['Close'],self.dat['Open'],self.dat['open_close_diff']))
+        self.dat['lower_wick_len'] = list(map(lambda low,clos,opn,diff: opn-low if diff>0.0 else clos-low,self.dat['Low'],self.dat['Close'],self.dat['Open'],self.dat['open_close_diff']))
 
-    def analyze_candle(self,dictt):
-        #print(dictt)
-        #print("Candle body = %f"%dictt['now']['body_len'])
-        #print("Candle len = %f"%dictt['now']['candle_len'])
-        #print("body mean = %f"%dictt['now']['body_mean'])
-        #print("candle mean = %f"%dictt['now']['candle_mean'])
-        #print("Upper wick len = %f"%dictt['now']['upper_wick_len'])
-        #print("Lower wick len = %f"%dictt['now']['lower_wick_len'])
-        #print("ratio_bodylen_cndlen = %f"%dictt['now']['ratio_bodylen_cndlen'])
-        #print("ratio DOJI = %f"%self.global_constants['ratio_DOJI'])
-        if(dictt['now']['ratio_bodylen_cndlen']>self.global_constants['ratio_MARUBOZU']):
+    def analyze_candleS(self):
+        now = -1
+        prev = now -1
+        if(self.dat['ratio_bodylen_cndlen'].to_list()[now]>self.global_constants['ratio_MARUBOZU']):
             self.MARUBOZU = 'TRUE'
-        if(dictt['now']['ratio_bodylen_cndlen']<self.global_constants['ratio_DOJI']):
-            #if(dictt['now']['body_mean']/dictt['now']['candle_mean']>self.global_constants['ratio_MEAN']):
-            if(dictt['now']['upper_wick_len']/dictt['now']['lower_wick_len']>self.global_constants['ratio_MEAN']):
+        if((self.dat['body_len'].to_list()[now]/self.dat['body_len'].to_list()[prev])>3.):
+            self.ENGULF = 'TRUE'
+        if(self.dat['ratio_bodylen_cndlen'].to_list()[now]<self.global_constants['ratio_DOJI']):
+            #if(self.dat[now]['body_mean']/self.dat[now]['candle_mean']>self.global_constants['ratio_MEAN']):
+            if(self.dat['upper_wick_len'].to_list()[now]/self.dat['lower_wick_len'].to_list()[now]>self.global_constants['ratio_MEAN']):
                 self.DOJI = 'TRUE'
-            if((dictt['now']['upper_wick_len']/dictt['now']['lower_wick_len']>self.global_constants['ratio_trend_REV']) or (dictt['now']['lower_wick_len']/dictt['now']['upper_wick_len']>self.global_constants['ratio_trend_REV'])):
+            if((self.dat['upper_wick_len'].to_list()[now]/self.dat['lower_wick_len'].to_list()[now]>self.global_constants['ratio_trend_REV']) or (self.dat['lower_wick_len'].to_list()[now]/self.dat['upper_wick_len'].to_list()[now]>self.global_constants['ratio_trend_REV'])):
                 self.REVSERSAL = 'TRUE'
+
     
     #https://machinelearningmastery.com/curve-fitting-with-python/ 
     def find_trend(self):
@@ -203,6 +184,7 @@ class stock_analsys:
 stock_symbols = {}
 stock_symbols['NIFTY F&O'] = pd.read_csv('sos_scheme.csv')['Symbol'].to_list()
 cls_instance = stock_analsys(stock_symbols)
+#cls_instance.single_stock('RELIANCE')
 
 
 #stock_symbols['NIFTY auto'] = pd.read_csv('ind_niftyautolist.csv')['Symbol'].to_list()
