@@ -10,6 +10,7 @@ from datetime import datetime,timedelta
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from statistics import mean
+import random
 
 
 
@@ -78,8 +79,6 @@ class stock_analsys:
                 self.find_trend()
                  
                 self.stocks.append(stock)
-                self.supp.append(self.SUPP)
-                self.resis.append(self.RESIS)
                 self.marubozu.append(self.MARUBOZU)
                 self.engulf.append(self.ENGULF)
                 self.doji.append(self.DOJI)
@@ -127,12 +126,28 @@ class stock_analsys:
         self.dat['upper_wick_len'] = list(map(lambda hi,clos,opn,diff: hi-clos if diff>0.0 else hi-opn,self.dat['High'],self.dat['Close'],self.dat['Open'],self.dat['open_close_diff']))
         self.dat['lower_wick_len'] = list(map(lambda low,clos,opn,diff: opn-low if diff>0.0 else clos-low,self.dat['Low'],self.dat['Close'],self.dat['Open'],self.dat['open_close_diff']))
 
+    def create_bins(self,lb,ub,bins):
+        print(type(lb))
+        bins = []
+        width = ((ub-lb)/bins)
+        for low in range(lb, lb + bins*width + 1, width):
+            bins.append((low, low+width))
+        bins2 = pd.IntervalIndex.from_tuples(bins)
+        return bins2
+    
+
     def analyze_candleS(self):
         now = -1
         prev = now -1
         
-        self.RESIS = mean(self.dat['High'].to_list()[-self.global_constants['supp_res_days']:])
-        self.SUPP = mean(self.dat['Low'].to_list()[-self.global_constants['supp_res_days']:])
+        supp_res_data_frame = self.dat.iloc[-70:,:]
+
+        #supp_res_data_frame['supp_bins'] = pd.qcut(supp_res_data_frame['Low'],q=5,precision=0)
+        supp_res_data_frame['supp_bins'] = pd.cut(supp_res_data_frame['Low'].to_list(),bins=5,right=False)
+        #supp_res_data_frame['supp_bins'].value_counts().plot(kind='barh')
+
+        #print(supp_res_data_frame)
+        #print(supp_res_data_frame['supp_bins'].value_counts())
        
         #to avoid DIV error
         if(self.dat['lower_wick_len'].to_list()[now]>0):
@@ -233,10 +248,23 @@ class stock_analsys:
     def poly13(self,x, a, b, c, d, e, f,g,h,i,j,k,l,m,n):
 	    return (a * x) + (b * x**2) + (c * x**3) + (d * x**4) + (e * x**5) + (f * x**6) + (g * x**7) + (h * x**8) + (i * x**9) + (j * x**10) + (k * x**11) + (l * x**12) + (m * x**13) + n
 
+    def test_func(self):
+        rnd = random.sample(range(1, 50), 10)
+        rnd.append(1000)
+        rnd.append(300)
+        rnd.append(500)
+        rnd.append(700)
+        xx = pd.cut(rnd,bins=3)
+        print(rnd)
+        print(xx.value_counts())
+
 stock_symbols = {}
 stock_symbols['NIFTY F&O'] = pd.read_csv('sos_scheme.csv')['Symbol'].to_list()
 cls_instance = stock_analsys(stock_symbols)
+#cls_instance.single_stock('MUTHOOTFIN')
 #cls_instance.single_stock('DRREDDY')
+#cls_instance.test_func()
+
 
 
 #stock_symbols['NIFTY auto'] = pd.read_csv('ind_niftyautolist.csv')['Symbol'].to_list()
