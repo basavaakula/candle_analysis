@@ -119,7 +119,8 @@ class stock_analsys:
 
     def process_data_all(self):
         self.dat['candle_len'] = (self.dat['High']-self.dat['Low']).to_list()
-        self.dat['body_len'] = [abs(x) for x in (self.dat['Close']-self.dat['Open']).to_list()]
+        #in case of DOJI candle we assign 0.001 as a very small body length...to avoid any DIV error!
+        self.dat['body_len'] = list(map(lambda x: abs(x) if x!=0.0 else 0.001,(self.dat['Close']-self.dat['Open']).to_list()))
         self.dat['body_mean'] = [abs(x) for x in ((self.dat['Close']+self.dat['Open'])*.5).to_list()]
         self.dat['open_close_diff'] = (self.dat['Close'] - self.dat['Open']).to_list()
         self.dat['ratio_bodylen_cndlen'] = (self.dat['body_len']/self.dat['candle_len']).to_list()
@@ -159,6 +160,7 @@ class stock_analsys:
         engulf_cond1 = (self.dat['Low'].to_list()[now]/self.dat['Low'].to_list()[prev])<=1.#Current Low shld be lower than prev Low
         engulf_cond2 = (self.dat['High'].to_list()[now]/self.dat['High'].to_list()[prev])>=1.#Curn high > Prev high
         engulf_cond3 = (self.dat['body_len'].to_list()[now]/self.dat['body_len'].to_list()[prev])>1.#
+
 
         doji_cond1 = self.dat['ratio_bodylen_cndlen'].to_list()[now]<self.global_constants['ratio_DOJI']
         doji_cond2 = self.dat['upper_wick_len'].to_list()[now]/lower_wick_len>self.global_constants['ratio_MEAN']
@@ -261,7 +263,7 @@ class stock_analsys:
 stock_symbols = {}
 stock_symbols['NIFTY F&O'] = pd.read_csv('sos_scheme.csv')['Symbol'].to_list()
 cls_instance = stock_analsys(stock_symbols)
-#cls_instance.single_stock('MUTHOOTFIN')
+#cls_instance.single_stock('IOC')
 #cls_instance.single_stock('DRREDDY')
 #cls_instance.test_func()
 
